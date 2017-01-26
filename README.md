@@ -1,11 +1,52 @@
 # Tensorify
 
+Prototyping with TensorFlow can often be very tideous because it provides a
+limited number of possible operations on data. Pre-processing steps can be
+implemented in pure Python, but if an intermediate parsing is required (or if
+you want to take more advantage of TensorFlow's multi-threading capabilities)
+the solution is to either write it yourself in C++ or use the `tf.py_func`
+wrapper. Using the wrapper, however, requires passing a lot of arguments
+to it that make software maintenance harder -- especially if you are re-using
+parsing functions or classes for other pursposes.
+
 This Python package provides `tensorflow_op`, a Python decorator that converts
 regular functions into TensorFlow ops, and `tensorify`, which is a
 convenience wrapper that applies the decorator to all the functions in the
 given module, either in-place or in a copy. 
 
-## `tensorflow_op`
+In short, it lets you do this:
+
+```python
+@tensorflow_op(tf.int32)
+def add(a_numpy_array, another_numpy_array, extra_one=False):
+    extra = 1 if extra_one else 0
+    return a_numpy_array + another_numpy_array + extra
+
+result = add(a_tf_tensor, another_tf_tensor, extra_one=True)
+```
+
+With the advantage of using any class or library you want inside the 
+function. This makes wrapping existing numerical libraries for use with
+Tensorflow extremely easy.
+
+**WARNING**: All functions wrapped with tensorify will be executed in the
+same machine as the main script, so this is not a very efficient solution.
+This is intended for prototyping and for pre-processing or parsing code only.
+Do not implement heavy deep learning layers with this!
+
+## Installation
+
+The tensorify package is not yet on the PyPI archive; you can install it with:
+
+```bash
+pip install git+https://github.com/lemonzi/tensorify
+```
+
+And then import it as usual.
+
+## Usage
+
+### `tensorflow_op`
 
 > A decorator that takes a function and turns it into a TensorFlow op.
 
@@ -20,7 +61,7 @@ If no name is supplied, the CamelCased name of the function will be used.
 The name can also be modified at call time using the `with_name()` method:
 
 ```python
-@tensorflow_op([tf.int32], name="Add")
+@tensorflow_op(tf.int32)
 def add(x, y, extra_one=False):
     return x + y + (1 if extra_one else 0)
 
@@ -68,7 +109,7 @@ x = tf.constant([1])
 three_x = replicate.with_outputs([tf.int32] * 3)(x, 3)
 ```
 
-## `tensorify`
+### `tensorify`
 
 > Converts all functions in a module into TensorFlow ops.
 
