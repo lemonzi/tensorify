@@ -71,13 +71,13 @@ def tensorflow_op(outputs=[], stateful=None, name=None, is_method=False):
         stateful = is_method
     # This is the function that returns a decorated function when called.
     # It is normally called internally by Python when using @tensorflow_op.
-    def tf_decorator(function):
+    def _tensorify_decorator(function):
         # TODO: Fix is_method and remove it from the argument list.
         # is_method = inspect.ismethod(function)
         # This function what will actually be called when the user calls the
         # returned function.
         @functools.wraps(function)
-        def tf_wrapper(*args, **kwargs):
+        def _tensorify_wrapper(*args, **kwargs):
             # TODO(lemonzi): Detect if one of the arguments is self.
             # Local, mutable copy of the op name
             name_to_use = name
@@ -107,11 +107,11 @@ def tensorflow_op(outputs=[], stateful=None, name=None, is_method=False):
             return tensorflow_op(outputs=new_outputs, stateful=stateful,
                                  name=name, is_method=is_method)(function)
         # The three functions are exposed publicly as attributes.
-        tf_wrapper.with_name = set_name
-        tf_wrapper.stateful = set_stateful
-        tf_wrapper.with_outputs = set_outputs
-        return tf_wrapper
-    return tf_decorator
+        _tensorify_wrapper.with_name = set_name
+        _tensorify_wrapper.stateful = set_stateful
+        _tensorify_wrapper.with_outputs = set_outputs
+        return _tensorify_wrapper
+    return _tensorify_decorator
 
 
 def camel_case(name):
