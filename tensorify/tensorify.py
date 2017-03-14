@@ -10,7 +10,8 @@ import inspect
 import tensorflow as tf
 
 
-def tensorflow_op(outputs=[], stateful=None, name=None, is_method=False):
+def tensorflow_op(outputs=[], stateful=None, name=None, is_method=False,
+                  shape=None):
     """A decorator that takes a function and turns it into a TensorFlow op.
 
     A call to the decorated function will create a node with input tensors
@@ -92,24 +93,39 @@ def tensorflow_op(outputs=[], stateful=None, name=None, is_method=False):
             else:
                 partial_function = functools.partial(function, **kwargs)
             # Wrap a partial application of the function as a TF op.
-            return tf.py_func(partial_function, args, outputs,
-                              stateful=stateful, name=name_to_use)
+            op = tf.py_func(partial_function, args, outputs,
+                            stateful=stateful, name=name_to_use)
+            if shape is not None:
+                if type(op) == list:
+                    [op.set_shape(s) for s in shape]
+                else:
+                    op.set_shape(shape)
+            return op
         # Returns a new decorated function with a different op name.
         def set_name(new_name):
             return tensorflow_op(outputs=outputs, stateful=stateful,
-                                 name=new_name, is_method=is_method)(function)
+                                 name=new_name, is_method=is_method,
+                                 shape=shape)(function)
         # Returns a new decorated function with a different statefulness.
         def set_stateful(new_statefulness=True):
             return tensorflow_op(outputs=outputs, stateful=new_stateful,
-                                 name=name, is_method=is_method)(function)
+                                 name=name, is_method=is_method,
+                                 shape=shape)(function)
         # Returns a new decorated function with a different output signature.
         def set_outputs(new_outputs):
             return tensorflow_op(outputs=new_outputs, stateful=stateful,
-                                 name=name, is_method=is_method)(function)
-        # The three functions are exposed publicly as attributes.
+                                 name=name, is_method=is_method,
+                                 shape=shape)(function)
+        # Returns a new decorated function with a different output shape.
+        def set_shape(new_shape):
+            return tensorflow_op(outputs=outputs, stateful=stateful,
+                                 name=name, is_method=is_method, 
+                                 shape=new_shape)(function)
+        # The four functions are exposed publicly as attributes.
         _tensorify_wrapper.with_name = set_name
         _tensorify_wrapper.stateful = set_stateful
         _tensorify_wrapper.with_outputs = set_outputs
+        _tensorify_wrapper.with_shape = set_shape
         return _tensorify_wrapper
     return _tensorify_decorator
 
