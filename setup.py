@@ -8,5 +8,5 @@ setup(name='tensorify',
       author_email='ql@lemonzi.me',
       license='MIT',
       packages=['tensorify'],
-      install_requires=['tensorflow'],
+      install_requires=['tensorflow>=1.0'],
       zip_safe=True)
