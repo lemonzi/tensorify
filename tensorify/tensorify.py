@@ -100,7 +100,7 @@ def tensorflow_op(outputs, stateful=None, name=None, is_method=False,
             if shape_to_use is not None:
                 if callable(shape_to_use):
                     shape_to_use = shape_to_use([arg.shape for arg in args])
-                if type(out_tensors) not in (list, tuple):
+                if type(out_tensors) in (list, tuple):
                     [t.set_shape(s) for s, t in zip(shape_to_use, out_tensors)]
                 else:
                     out_tensors.set_shape(shape_to_use)
