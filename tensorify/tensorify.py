@@ -10,7 +10,7 @@ import inspect
 import tensorflow as tf
 
 
-def tensorflow_op(outputs=[], stateful=None, name=None, is_method=False,
+def tensorflow_op(outputs, stateful=None, name=None, is_method=False,
                   shape=None):
     """A decorator that takes a function and turns it into a TensorFlow op.
 
@@ -92,15 +92,18 @@ def tensorflow_op(outputs=[], stateful=None, name=None, is_method=False,
                 partial_function = functools.partial(function, self, **kwargs)
             else:
                 partial_function = functools.partial(function, **kwargs)
+            args = [tf.convert_to_tensor(arg) for arg in args]
             # Wrap a partial application of the function as a TF op.
-            op = tf.py_func(partial_function, args, outputs,
-                            stateful=stateful, name=name_to_use)
+            ops = tf.py_func(partial_function, args, outputs,
+                             stateful=stateful, name=name_to_use)
             if shape is not None:
-                if type(op) == list:
-                    [op.set_shape(s) for s in shape]
+                if callable(shape):
+                    shape = shape([arg.shape for arg in args])
+                if type(ops) not in (list, tuple):
+                    [op.set_shape(s) for s, op in zip(shape, ops)]
                 else:
-                    op.set_shape(shape)
-            return op
+                    ops.set_shape(shape)
+            return ops
         # Returns a new decorated function with a different op name.
         def set_name(new_name):
             return tensorflow_op(outputs=outputs, stateful=stateful,
@@ -119,7 +122,7 @@ def tensorflow_op(outputs=[], stateful=None, name=None, is_method=False,
         # Returns a new decorated function with a different output shape.
         def set_shape(new_shape):
             return tensorflow_op(outputs=outputs, stateful=stateful,
-                                 name=name, is_method=is_method, 
+                                 name=name, is_method=is_method,
                                  shape=new_shape)(function)
         # The four functions are exposed publicly as attributes.
         _tensorify_wrapper.with_name = set_name
