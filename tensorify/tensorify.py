@@ -136,7 +136,7 @@ def tensorflow_op(outputs, stateful=None, name=None, is_method=False,
 def camel_case(name):
     """Converts the given name in snake_case or lowerCamelCase to CamelCase."""
     words = name.split('_')
-    return ''.join(word.capitalize() for word in words)
+    return ''.join(word[0].upper() + word[1:] for word in words)
 
 
 def tensorify(module, default_outputs, in_place=True):
