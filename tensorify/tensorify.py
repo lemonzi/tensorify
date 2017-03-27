@@ -80,8 +80,9 @@ def tensorflow_op(outputs, stateful=None, name=None, is_method=False,
         @functools.wraps(function)
         def _tensorify_wrapper(*args, **kwargs):
             # TODO(lemonzi): Detect if one of the arguments is self.
-            # Local, mutable copy of the op name
+            # Local, mutable copies of the op name and shape
             name_to_use = name
+            shape_to_use = shape
             # If we have no name, we figure it out from the function name.
             if name_to_use is None:
                 name_to_use = camel_case(function.__name__)
@@ -94,16 +95,16 @@ def tensorflow_op(outputs, stateful=None, name=None, is_method=False,
                 partial_function = functools.partial(function, **kwargs)
             args = [tf.convert_to_tensor(arg) for arg in args]
             # Wrap a partial application of the function as a TF op.
-            ops = tf.py_func(partial_function, args, outputs,
-                             stateful=stateful, name=name_to_use)
-            if shape is not None:
-                if callable(shape):
-                    shape = shape([arg.shape for arg in args])
-                if type(ops) not in (list, tuple):
-                    [op.set_shape(s) for s, op in zip(shape, ops)]
+            out_tensors = tf.py_func(partial_function, args, outputs,
+                                     stateful=stateful, name=name_to_use)
+            if shape_to_use is not None:
+                if callable(shape_to_use):
+                    shape_to_use = shape_to_use([arg.shape for arg in args])
+                if type(out_tensors) not in (list, tuple):
+                    [t.set_shape(s) for s, t in zip(shape_to_use, out_tensors)]
                 else:
-                    ops.set_shape(shape)
-            return ops
+                    out_tensors.set_shape(shape_to_use)
+            return out_tensors
         # Returns a new decorated function with a different op name.
         def set_name(new_name):
             return tensorflow_op(outputs=outputs, stateful=stateful,
